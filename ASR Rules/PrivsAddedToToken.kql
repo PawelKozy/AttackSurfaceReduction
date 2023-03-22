@@ -1,0 +1,48 @@
+let SePrivileges = datatable(PrivIndex:int, PrivName:string)
+[
+    2, "SeCreateTokenPrivilege",
+    3, "SeAssignPrimaryTokenPrivilege",
+    4, "SeLockMemoryPrivilege",
+    5, "SeIncreaseQuotaPrivilege",
+    6, "SeMachineAccountPrivilege",
+    7, "SeTcbPrivilege",
+    8, "SeSecurityPrivilege",
+    9, "SeTakeOwnershipPrivilege",
+    10, "SeLoadDriverPrivilege",
+    11, "SeSystemProfilePrivilege",
+    12, "SeSystemtimePrivilege",
+    13, "SeProfileSingleProcessPrivilege",
+    14, "SeIncreaseBasePriorityPrivilege",
+    15, "SeCreatePagefilePrivilege",
+    16, "SeCreatePermanentPrivilege",
+    17, "SeBackupPrivilege",
+    18, "SeRestorePrivilege",
+    19, "SeShutdownPrivilege",
+    20, "SeDebugPrivilege",
+    21, "SeAuditPrivilege",
+    22, "SeSystemEnvironmentPrivilege",
+    23, "SeChangeNotifyPrivilege",
+    24, "SeRemoteShutdownPrivilege",
+    25, "SeUndockPrivilege",
+    26, "SeSyncAgentPrivilege",
+    27, "SeEnableDelegationPrivilege",
+    28, "SeManageVolumePrivilege",
+    29, "SeImpersonatePrivilege",
+    30, "SeCreateGlobalPrivilege",
+    31, "SeTrustedCredManAccessPrivilege",
+    32, "SeRelabelPrivilege",
+    33, "SeIncreaseWorkingSetPrivilege",
+    34, "SeTimeZonePrivilege",
+    35, "SeCreateSymbolicLinkPrivilege"
+];
+YourTableName
+| where ActionType == "ProcessPrimaryTokenModified"
+| where CurrentToken = toint(AdditionalFields.CurrentTokenPrivEnabled)
+| whrre OriginalToken = toint(AdditionalFields.OriginalTokenPrivEnabled)
+| mv-expand PrivIndex = range(2, 35) to typeof(int)
+| extend PrivMask = binary_shift_left(1, PrivIndex - 1)
+| extend PrivOrig = binary_and(OriginalToken, PrivMask) == PrivMask
+| extend PrivCurrent = binary_and(CurrentToken, PrivMask) == PrivMask
+| where PrivCurrent == true and PrivOrig == false
+| join kind=inner SePrivileges on PrivIndex
+| summarize AddedPrivileges = make_set(PrivName) by DeviceName, InitiatingProcessFileName, InitiatingProcessSHA1
